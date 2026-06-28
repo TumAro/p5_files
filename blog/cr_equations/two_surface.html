@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>z = u + iv</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #fff; display: flex; justify-content: center;
+           align-items: center; min-height: 100vh; }
+  </style>
+</head>
+<body>
+<script>
+const W = 420, H = 470;
+const BG = '#fff', FG = '#000', DIM = '#d8d8d8', AXCOL = '#888';
+const CX = W / 2, CY = H / 2;
+const SC = 80; // pixels per unit
+const GMAX = 2.0;
+
+let uVal = 1.0, vVal = 0.8;
+let draggingU = false, draggingV = false;
+
+function pr(u, v) {
+  return [CX + u * SC, CY - v * SC];
+}
+
+function setup() {
+  createCanvas(W, H);
+  textFont('Georgia');
+}
+
+function draw() {
+  background(BG);
+
+  // --- grid ---
+  stroke(DIM); strokeWeight(0.8);
+  for (let t = -GMAX; t <= GMAX + 0.01; t += 0.5) {
+    line(CX + t*SC, CY - GMAX*SC, CX + t*SC, CY + GMAX*SC); // vertical
+    line(CX - GMAX*SC, CY - t*SC, CX + GMAX*SC, CY - t*SC); // horizontal
+  }
+
+  let AX = GMAX + 0.3;
+
+  // --- axes ---
+  stroke(AXCOL); strokeWeight(1.6);
+  line(CX - AX*SC, CY, CX + AX*SC, CY); // u axis
+  line(CX, CY + AX*SC, CX, CY - AX*SC); // v axis
+
+  // arrowheads
+  fill(AXCOL); noStroke();
+  triangle(CX+AX*SC, CY,   CX+AX*SC-8, CY-4, CX+AX*SC-8, CY+4); // right
+  triangle(CX, CY-AX*SC,   CX-4, CY-AX*SC+8, CX+4, CY-AX*SC+8); // up
+
+  // axis labels
+  textSize(12); fill(AXCOL); noStroke();
+  textAlign(LEFT,  CENTER); text('u(x,y)', CX + AX*SC + 6, CY);
+  textAlign(CENTER, BOTTOM); text('v(x,y)', CX, CY - AX*SC - 6);
+
+  // ticks + numbers
+  for (let t = -2; t <= 2; t++) {
+    if (t === 0) continue;
+    stroke(AXCOL); strokeWeight(1);
+    line(CX + t*SC, CY - 4, CX + t*SC, CY + 4); // u ticks
+    line(CX - 4, CY - t*SC, CX + 4, CY - t*SC); // v ticks
+    fill(DIM); noStroke(); textSize(9);
+    textAlign(CENTER, TOP);  text(t, CX + t*SC, CY + 6);
+    textAlign(RIGHT, CENTER); text(t, CX - 6, CY - t*SC);
+  }
+
+  // --- key points ---
+  let up = pr(uVal, 0);
+  let vp = pr(0, vVal);
+  let zp = pr(uVal, vVal);
+
+  // dashed rectangle lines
+  drawingContext.setLineDash([5, 4]);
+  stroke(FG); strokeWeight(1.2);
+  line(up[0], up[1], zp[0], zp[1]); // u → z (vertical)
+  line(vp[0], vp[1], zp[0], zp[1]); // v → z (horizontal)
+  drawingContext.setLineDash([]);
+
+  // z dot (filled)
+  fill(FG); noStroke();
+  ellipse(zp[0], zp[1], 12, 12);
+
+  // u dot (hollow, draggable)
+  fill(255); stroke(FG); strokeWeight(1.8);
+  ellipse(up[0], up[1], 13, 13);
+
+  // v dot (hollow, draggable)
+  fill(255); stroke(FG); strokeWeight(1.8);
+  ellipse(vp[0], vp[1], 13, 13);
+
+  // labels
+  fill(FG); noStroke(); textSize(12);
+  textAlign(CENTER, TOP);  text('u', up[0], up[1] + 8);
+  textAlign(RIGHT, CENTER); text('v', vp[0] - 8, vp[1]);
+  textAlign(LEFT, BOTTOM);  text('z', zp[0] + 9, zp[1] - 6);
+
+  // big readout
+  let sign = vVal >= 0 ? '+' : '−';
+  let vAbs = Math.abs(vVal).toFixed(1);
+  let zTxt = 'z  =  ' + uVal.toFixed(1) + '  ' + sign + '  ' + vAbs + 'i';
+  // white box behind z text
+  textSize(16); textAlign(CENTER, BOTTOM);
+  let tw = textWidth(zTxt);
+  fill(255); stroke(FG); strokeWeight(1);
+  rect(W/2 - tw/2 - 10, H - 62, tw + 20, 28, 3);
+  fill(FG); noStroke();
+  text(zTxt, W / 2, H - 38);
+
+  // hint
+  textSize(10); fill(AXCOL); textAlign(CENTER, BOTTOM);
+  text('drag  u  or  v', W / 2, H - 14);
+}
+
+function mousePressed() {
+  let up = pr(uVal, 0), vp = pr(0, vVal);
+  if (dist(mouseX,mouseY, up[0],up[1]) < 16) draggingU = true;
+  if (dist(mouseX,mouseY, vp[0],vp[1]) < 16) draggingV = true;
+}
+
+function mouseDragged() {
+  if (draggingU) uVal = Math.round(constrain((mouseX - CX) / SC, -GMAX, GMAX) * 10) / 10;
+  if (draggingV) vVal = Math.round(constrain((CY - mouseY) / SC, -GMAX, GMAX) * 10) / 10;
+}
+
+function mouseReleased() { draggingU = false; draggingV = false; }
+</script>
+</body>
+</html>

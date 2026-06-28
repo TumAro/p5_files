@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>nonlinear transform</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #fff; display: flex; justify-content: center;
+           align-items: center; min-height: 100vh; }
+  </style>
+</head>
+<body>
+<script>
+const W = 460, H = 460;
+const BG = '#fff', FG = '#000', DIM = '#e0e0e0', AXCOL = '#bbb';
+const CX = W / 2, CY = H / 2;
+const SC = 100;           // pixels per unit
+const GMAX = 1.0;         // grid from -1 to 1
+const GSTEP = 0.25;       // grid spacing
+const SAMPLES = 50;       // curve smoothness
+
+function setup() {
+  createCanvas(W, H);
+  textFont('Georgia');
+  noFill();
+}
+
+function pr(x, y) {
+  return [CX + x * SC, CY - y * SC];
+}
+
+function tform(x, y, t) {
+  // lerp between identity and f(z)=z²
+  let u = x*x - y*y;
+  let v = 2*x*y;
+  return [lerp(x, u, t), lerp(y, v, t)];
+}
+
+function draw() {
+  background(BG);
+
+  // smooth 0→1→0 loop, 6s cycle
+  let t = (1 - cos(frameCount * TWO_PI / 360)) / 2;
+
+  // --- reference grid (always, faint) ---
+  stroke(DIM); strokeWeight(1);
+  for (let v = -GMAX; v <= GMAX + 0.001; v += GSTEP) {
+    let [ax, ay] = pr(v, -GMAX), [bx, by] = pr(v,  GMAX);
+    let [cx, cy] = pr(-GMAX, v), [dx, dy] = pr(GMAX, v);
+    line(ax, ay, bx, by);
+    line(cx, cy, dx, dy);
+  }
+
+  // --- dim axes ---
+  stroke(AXCOL); strokeWeight(1.2);
+  line(CX - SC*1.6, CY, CX + SC*1.6, CY);
+  line(CX, CY + SC*1.6, CX, CY - SC*1.6);
+
+  // --- transformed grid ---
+  stroke(FG); strokeWeight(1.6); noFill();
+
+  // vertical lines: x = const, sweep y
+  for (let x = -GMAX; x <= GMAX + 0.001; x += GSTEP) {
+    beginShape();
+    for (let s = 0; s <= SAMPLES; s++) {
+      let y = map(s, 0, SAMPLES, -GMAX, GMAX);
+      let [tx, ty] = tform(x, y, t);
+      let [sx, sy] = pr(tx, ty);
+      vertex(sx, sy);
+    }
+    endShape();
+  }
+
+  // horizontal lines: y = const, sweep x
+  for (let y = -GMAX; y <= GMAX + 0.001; y += GSTEP) {
+    beginShape();
+    for (let s = 0; s <= SAMPLES; s++) {
+      let x = map(s, 0, SAMPLES, -GMAX, GMAX);
+      let [tx, ty] = tform(x, y, t);
+      let [sx, sy] = pr(tx, ty);
+      vertex(sx, sy);
+    }
+    endShape();
+  }
+
+  // --- formula box (top-left) ---
+  let bx = 14, by = 14, bw = 148, bh = 62;
+  fill(255); stroke(FG); strokeWeight(1);
+  rect(bx, by, bw, bh, 3);
+
+  fill(FG); noStroke();
+  textSize(14); textAlign(LEFT, TOP);
+  text('f(z) = z²', bx + 12, by + 10);
+  textSize(10);
+  text('u = x² − y²', bx + 12, by + 34);
+  text('v = 2xy', bx + 12, by + 48);
+}
+</script>
+</body>
+</html>

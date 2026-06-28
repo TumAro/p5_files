@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complex Plane</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { display: flex; justify-content: center; align-items: center; height: 100vh; }
+    canvas { display: block; }
+  </style>
+</head>
+<body>
+<script>
+// --- theme ---
+const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const BG   = dark ? '#111' : '#fff';
+const FG   = dark ? '#fff' : '#000';
+const GRID = dark ? '#2a2a2a' : '#e8e8e8';
+const DIM  = dark ? '#666' : '#aaa';
+
+const W = 480, H = 480;
+const CX = W / 2, CY = H / 2;
+const SC = 70;
+const UNITS = 3;
+
+let px, py, dragging = false;
+
+function setup() {
+  createCanvas(W, H);
+  textFont('Georgia');
+  px = CX + SC;
+  py = CY - SC;
+}
+
+function draw() {
+  background(BG);
+
+  // grid
+  stroke(GRID); strokeWeight(1);
+  for (let i = -UNITS; i <= UNITS; i++) {
+    if (i === 0) continue;
+    line(CX + i*SC, 0, CX + i*SC, H);
+    line(0, CY + i*SC, W, CY + i*SC);
+  }
+
+  // axes
+  stroke(FG); strokeWeight(1.5);
+  line(24, CY, W-24, CY);
+  line(CX, H-24, CX, 24);
+
+  // arrowheads
+  fill(FG); noStroke();
+  triangle(W-24, CY,   W-32, CY-5, W-32, CY+5);
+  triangle(CX,   24,   CX-5, 32,   CX+5, 32);
+
+  // tick labels
+  textSize(11); fill(DIM); noStroke();
+  for (let i = -UNITS; i <= UNITS; i++) {
+    if (i === 0) continue;
+    stroke(FG); strokeWeight(1);
+    line(CX + i*SC, CY-4, CX + i*SC, CY+4);
+    line(CX-4, CY - i*SC, CX+4, CY - i*SC);
+    noStroke();
+    textAlign(CENTER, TOP);
+    text(i, CX + i*SC, CY+8);
+    textAlign(RIGHT, CENTER);
+    text(i, CX-8, CY - i*SC);
+  }
+
+  // axis labels
+  noStroke(); fill(FG);
+  textSize(13);
+  textAlign(LEFT, CENTER); text('Re', W-22, CY-16);
+  textAlign(CENTER, BOTTOM); text('Im', CX+16, 20);
+
+  // origin
+  textSize(11); fill(DIM); textAlign(RIGHT, TOP);
+  text('0', CX-6, CY+4);
+
+  // --- compute a, b ---
+  let a = (px - CX) / SC;
+  let b = -(py - CY) / SC;
+  let aR = Math.round(a * 100) / 100;
+  let bR = Math.round(b * 100) / 100;
+
+  // dashed projections
+  dashLine(px, py, px, CY);
+  dashLine(px, py, CX, py);
+
+  // feet on axes
+  fill(FG); noStroke();
+  ellipse(px, CY, 7, 7);
+  ellipse(CX, py, 7, 7);
+
+  // vector from origin
+  stroke(FG); strokeWeight(1.5);
+  line(CX, CY, px, py);
+
+  // the point
+  fill(FG); noStroke();
+  ellipse(px, py, 12, 12);
+
+  // --- pedagogy labels ---
+  // a label on Re axis
+  let aLabel = 'a = ' + aR;
+  textSize(12); noStroke(); fill(FG);
+  textAlign(CENTER, TOP);
+  text(aLabel, px, CY + 10);
+
+  // b label on Im axis
+  let bLabel = 'b = ' + bR;
+  textAlign(RIGHT, CENTER);
+  text(bLabel, CX - 10, py);
+
+  // main label at point
+  let sign = bR >= 0 ? ' + ' : ' - ';
+  let bAbs = Math.abs(bR);
+  let lbl = aR + sign + bAbs + 'i';
+  if (bR === 0) lbl = '' + aR;
+  if (aR === 0) lbl = bR + 'i';
+
+  textSize(14); fill(FG); noStroke();
+  textAlign(px < CX ? RIGHT : LEFT, py < CY ? BOTTOM : TOP);
+  let offX = px < CX ? -10 : 10;
+  let offY = py < CY ? -10 : 10;
+  text(lbl, px + offX, py + offY);
+
+  // --- hint text (fades after dragging) ---
+  textSize(10); fill(DIM); noStroke();
+  textAlign(CENTER, BOTTOM);
+  text('drag the point', W/2, H - 8);
+}
+
+function dashLine(x1, y1, x2, y2) {
+  let d = dist(x1, y1, x2, y2);
+  let dx = (x2-x1)/d, dy = (y2-y1)/d;
+  stroke(FG); strokeWeight(1);
+  let t = 0; let on = true;
+  while (t < d) {
+    let seg = on ? 6 : 4;
+    let t2 = Math.min(t+seg, d);
+    if (on) line(x1+dx*t, y1+dy*t, x1+dx*t2, y1+dy*t2);
+    t += seg; on = !on;
+  }
+}
+
+function mousePressed()  { if (dist(mouseX,mouseY,px,py) < 14) dragging = true; }
+function mouseDragged()  { if (dragging) { px = constrain(mouseX,28,W-28); py = constrain(mouseY,28,H-28); } }
+function mouseReleased() { dragging = false; }
+</script>
+</body>
+</html>

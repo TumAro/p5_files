@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Jacobian transform</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #fff; font-family: Georgia, serif;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      min-height: 100vh; gap: 12px; padding: 8px;
+    }
+    .controls { display: flex; gap: 40px; font-size: 13px; }
+    .ctrl { display: flex; align-items: center; gap: 8px; }
+    input[type=range] { width: 120px; cursor: pointer; }
+  </style>
+</head>
+<body>
+<div class="controls">
+  <div class="ctrl"><label>a =</label>
+    <input type="range" id="asl" min="-2" max="2" step="0.1" value="0">
+    <span id="av">1.0</span>
+  </div>
+  <div class="ctrl"><label>b =</label>
+    <input type="range" id="bsl" min="-2" max="2" step="0.1" value="1">
+    <span id="bv">0.0</span>
+  </div>
+</div>
+<script>
+const W = 460, H = 460;
+const BG = '#fff', FG = '#000', DIM = '#e0e0e0', AXCOL = '#bbb';
+const IVEC = '#cc2200';  // i-hat: red
+const JVEC = '#228800';  // j-hat: green
+const CX = W / 2, CY = H / 2;
+const SC = 90;
+const GMAX = 1.2, GSTEP = 0.6, SAMPLES = 50;
+
+let aVal = 1.0, bVal = 0.0;
+
+function setup() {
+  createCanvas(W, H);
+  textFont('Georgia');
+  select('#asl').input(function() { aVal = +this.value(); select('#av').html(aVal.toFixed(1)); });
+  select('#bsl').input(function() { bVal = +this.value(); select('#bv').html(bVal.toFixed(1)); });
+}
+
+function pr(x, y) { return [CX + x * SC, CY - y * SC]; }
+
+function tform(x, y) {
+  return [aVal*x - bVal*y, bVal*x + aVal*y];
+}
+
+function draw() {
+  background(BG);
+
+  // --- reference grid (always faint) ---
+  stroke(DIM); strokeWeight(1); noFill();
+  for (let v = -GMAX; v <= GMAX + 0.001; v += GSTEP) {
+    let [ax,ay] = pr(v,-GMAX), [bx,by] = pr(v, GMAX);
+    let [cx,cy] = pr(-GMAX,v), [dx,dy] = pr(GMAX, v);
+    line(ax,ay,bx,by); line(cx,cy,dx,dy);
+  }
+
+  // --- dim axes ---
+  stroke(AXCOL); strokeWeight(1.2);
+  line(CX - SC*1.8, CY, CX + SC*1.8, CY);
+  line(CX, CY + SC*1.8, CX, CY - SC*1.8);
+
+  // --- transformed grid ---
+  stroke(FG); strokeWeight(1.5); noFill();
+  for (let x = -GMAX; x <= GMAX + 0.001; x += GSTEP) {
+    beginShape();
+    for (let s = 0; s <= SAMPLES; s++) {
+      let y = map(s, 0, SAMPLES, -GMAX, GMAX);
+      let [tx,ty] = tform(x, y);
+      let [sx,sy] = pr(tx, ty);
+      vertex(sx, sy);
+    }
+    endShape();
+  }
+  for (let y = -GMAX; y <= GMAX + 0.001; y += GSTEP) {
+    beginShape();
+    for (let s = 0; s <= SAMPLES; s++) {
+      let x = map(s, 0, SAMPLES, -GMAX, GMAX);
+      let [tx,ty] = tform(x, y);
+      let [sx,sy] = pr(tx, ty);
+      vertex(sx, sy);
+    }
+    endShape();
+  }
+
+  // --- basis vectors ---
+  let [ix,iy] = tform(1, 0);  // i-hat → (a, b)
+  let [jx,jy] = tform(0, 1);  // j-hat → (-b, a)
+  drawArrow(0, 0, ix*2/3, iy*2/3, IVEC, 2.5);
+  drawArrow(0, 0, jx*2/3, jy*2/3, JVEC, 2.5);
+}
+
+function drawArrow(x0, y0, x1, y1, col, sw) {
+  let [sx0,sy0] = pr(x0,y0);
+  let [sx1,sy1] = pr(x1,y1);
+  stroke(col); strokeWeight(sw);
+  line(sx0,sy0, sx1,sy1);
+  let dx=sx1-sx0, dy=sy1-sy0;
+  let len=Math.sqrt(dx*dx+dy*dy);
+  if (len < 1) return;
+  dx/=len; dy/=len;
+  let px=-dy, py=dx, sz=9;
+  noStroke(); fill(col);
+  triangle(sx1,sy1, sx1-dx*sz+px*4,sy1-dy*sz+py*4, sx1-dx*sz-px*4,sy1-dy*sz-py*4);
+}
+</script>
+</body>
+</html>
